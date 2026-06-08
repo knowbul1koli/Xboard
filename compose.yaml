@@ -1,11 +1,12 @@
 services:
-  web:
-    image: ghcr.io/cedar2025/xboard:new
+  xboard:
+    image: ghcr.io/cedar2025/xboard:latest
+    ports:
+      - "127.0.0.1:7001:7001"
     volumes:
+      - ./.env:/www/.env
       - ./MailService.php:/www/app/Services/MailService.php
       - ./admin.blade.php:/www/resources/views/admin.blade.php
-      - redis-data:/data
-      - ./.env:/www/.env
       - ./custom_mail:/www/resources/views/mail
       - ./.docker/.data/:/www/.docker/.data
       - ./storage/logs:/www/storage/logs
@@ -17,30 +18,32 @@ services:
       - ./public/pay-usdc-erc20:/www/public/pay-usdc-erc20
       - ./public/pay-usdt-trc20:/www/public/pay-usdt-trc20
       - ./app/Http/Controllers/V1/Guest/TelegramController.php:/www/app/Http/Controllers/V1/Guest/TelegramController.php
+      - redis-data:/data
     environment:
+      - RESOURCE_PROFILE=balanced
+      - ENABLE_HORIZON=true
       - docker=true
     depends_on:
       redis:
         condition: service_healthy
     command: sh -c "composer require resend/resend-laravel -q && php artisan octane:start --host=0.0.0.0 --port=7001"
     restart: on-failure
-    ports:
-      - "127.0.0.1:7001:7001"
-      
+
   horizon:
-    image: ghcr.io/cedar2025/xboard:new
+    image: ghcr.io/cedar2025/xboard:latest
     volumes:
-      - ./MailService.php:/www/app/Services/MailService.php
-      - redis-data:/data
       - ./.env:/www/.env
+      - ./MailService.php:/www/app/Services/MailService.php
       - ./custom_mail:/www/resources/views/mail
       - ./.docker/.data/:/www/.docker/.data
       - ./storage/logs:/www/storage/logs
+      - ./storage/theme:/www/storage/theme
       - ./plugins:/www/plugins
       - ./public/pay-usdt-erc20:/www/public/pay-usdt-erc20
       - ./public/pay-usdc-erc20:/www/public/pay-usdc-erc20
       - ./public/pay-usdt-trc20:/www/public/pay-usdt-trc20
       - ./app/Http/Controllers/V1/Guest/TelegramController.php:/www/app/Http/Controllers/V1/Guest/TelegramController.php
+      - redis-data:/data
     restart: on-failure
     command: sh -c "composer require resend/resend-laravel -q && php artisan horizon"
     depends_on:
@@ -48,9 +51,8 @@ services:
         condition: service_healthy
 
   ws-server:
-    image: ghcr.io/cedar2025/xboard:new
+    image: ghcr.io/cedar2025/xboard:latest
     volumes:
-      - redis-data:/data
       - ./.env:/www/.env
       - ./custom_mail:/www/resources/views/mail
       - ./.docker/.data/:/www/.docker/.data
@@ -60,6 +62,7 @@ services:
       - ./public/pay-usdc-erc20:/www/public/pay-usdc-erc20
       - ./public/pay-usdt-trc20:/www/public/pay-usdt-trc20
       - ./app/Http/Controllers/V1/Guest/TelegramController.php:/www/app/Http/Controllers/V1/Guest/TelegramController.php
+      - redis-data:/data
     command: php artisan ws-server start
     depends_on:
       redis:
