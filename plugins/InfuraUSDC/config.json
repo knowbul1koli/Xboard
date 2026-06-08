@@ -1,0 +1,8 @@
+{
+    "name": "InfuraUSDC",
+    "code": "infura_usdc",
+    "type": "payment",
+    "version": "1.0.0",
+    "description": "USDC ERC20 payment via Infura",
+    "author": "Custom"
+}

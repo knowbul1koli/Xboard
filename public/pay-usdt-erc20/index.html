@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>USDT 收银台 · ERC20</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 15px; }
+body {
+  min-height: 100vh;
+  background: #08090f;
+  color: #e2e4f0;
+  font-family: 'Outfit', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center;
+  padding: 24px 16px 48px;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0;
+  background:
+    radial-gradient(ellipse 70vw 50vh at 50% -10%, rgba(98,126,234,0.13) 0%, transparent 70%),
+    linear-gradient(rgba(98,126,234,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(98,126,234,0.025) 1px, transparent 1px);
+  background-size: 100% 100%, 44px 44px, 44px 44px;
+  pointer-events: none;
+}
+.card {
+  position: relative; z-index: 1;
+  width: 100%; max-width: 460px;
+  background: linear-gradient(170deg, #10111e 0%, #0c0d1a 100%);
+  border: 1px solid rgba(98,126,234,0.18);
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 1px rgba(98,126,234,0.08),
+    0 40px 100px rgba(0,0,0,0.7),
+    0 0 80px rgba(98,126,234,0.08);
+  animation: rise .55s cubic-bezier(.22,1,.36,1) both;
+}
+@keyframes rise {
+  from { opacity:0; transform:translateY(28px) scale(0.97) }
+  to   { opacity:1; transform:none }
+}
+.stripe {
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #627eea, #8fa4ff, #627eea, transparent);
+}
+.header {
+  padding: 22px 26px 18px;
+  display: flex; align-items: center; gap: 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.coin-badge {
+  width: 46px; height: 46px; border-radius: 14px;
+  background: linear-gradient(135deg, #627eea 0%, #3a55cc 100%);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; flex-shrink: 0;
+  box-shadow: 0 6px 20px rgba(98,126,234,0.4);
+}
+.coin-info { flex: 1 }
+.coin-title { font-size: 18px; font-weight: 700; letter-spacing: -.3px; color: #eaedf8 }
+.net-tag {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10.5px; font-weight: 600;
+  color: #627eea;
+  background: rgba(98,126,234,0.12);
+  border: 1px solid rgba(98,126,234,0.28);
+  border-radius: 20px; padding: 2px 10px; margin-top: 4px;
+}
+.net-tag::before {
+  content: '';
+  width: 5px; height: 5px; border-radius: 50%;
+  background: #627eea; box-shadow: 0 0 6px #627eea;
+  animation: blink 2s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+.timer-box { position:relative; width:46px; height:46px }
+.timer-box svg { position:absolute; inset:0 }
+.timer-ring circle { fill:none; stroke-width:3; stroke-linecap:round }
+.track { stroke: rgba(255,255,255,0.07) }
+.prog  {
+  stroke: #627eea;
+  stroke-dasharray: 113; stroke-dashoffset: 0;
+  transform: rotate(-90deg); transform-origin: 50% 50%;
+  transition: stroke-dashoffset 1s linear, stroke .5s;
+}
+.timer-num {
+  position:absolute; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:600;
+  color:#e2e4f0;
+}
+.amount-row {
+  padding: 18px 26px 16px; text-align: center;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  background: rgba(98,126,234,0.04);
+}
+.amt-label { font-size:11px; font-weight:500; letter-spacing:.12em; text-transform:uppercase; color:rgba(255,255,255,0.28); margin-bottom:6px }
+.amt-num { font-family:'IBM Plex Mono',monospace; font-size:38px; font-weight:600; letter-spacing:-2px; line-height:1; color:#eaedf8 }
+.amt-unit { font-size:16px; color:#627eea; margin-left:6px; font-weight:500; letter-spacing:0 }
+.qr-zone {
+  padding: 26px 26px 18px;
+  display: flex; flex-direction: column; align-items: center; gap: 16px;
+}
+.qr-frame {
+  position: relative; padding: 13px; background: #fff; border-radius: 14px;
+  box-shadow: 0 0 50px rgba(98,126,234,0.22);
+}
+.qr-frame::before,.qr-frame::after,.qr-bl::before,.qr-bl::after {
+  content:''; position:absolute; width:16px; height:16px;
+  border-color:#627eea; border-style:solid;
+}
+.qr-frame::before { top:-2px;  left:-2px;  border-width:3px 0 0 3px; border-radius:4px 0 0 0 }
+.qr-frame::after  { top:-2px;  right:-2px; border-width:3px 3px 0 0; border-radius:0 4px 0 0 }
+.qr-bl::before    { bottom:-2px; left:-2px;  border-width:0 0 3px 3px; border-radius:0 0 0 4px }
+.qr-bl::after     { bottom:-2px; right:-2px; border-width:0 3px 3px 0; border-radius:0 0 4px 0 }
+.qr-bl { position:absolute; inset:-2px; pointer-events:none }
+#qrcode img, #qrcode canvas { display:block; border-radius:4px }
+.qr-hint { font-size:12px; color:rgba(255,255,255,0.3) }
+.addr-block { padding: 0 26px }
+.addr-label { font-size:11px; font-weight:500; letter-spacing:.1em; text-transform:uppercase; color:rgba(255,255,255,0.28); margin-bottom:8px }
+.addr-box {
+  display:flex; align-items:center; gap:8px;
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:12px; padding:12px 14px;
+  transition:border-color .2s;
+}
+.addr-box:hover { border-color:rgba(98,126,234,0.3) }
+.addr-str { flex:1; font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:#c4c8e8; word-break:break-all; line-height:1.55; user-select:all }
+.copy-btn {
+  flex-shrink:0; width:34px; height:34px; border-radius:8px;
+  border:1px solid rgba(255,255,255,0.1);
+  background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.4);
+  cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s;
+}
+.copy-btn:hover { background:rgba(98,126,234,0.12); color:#627eea; border-color:rgba(98,126,234,0.35) }
+.copy-btn.ok   { background:rgba(98,126,234,0.18); color:#627eea; border-color:#627eea }
+.steps {
+  margin: 20px 26px 0; padding: 16px;
+  background: rgba(98,126,234,0.05);
+  border: 1px solid rgba(98,126,234,0.14);
+  border-radius: 14px;
+}
+.steps-title { font-size:12px; font-weight:600; color:#627eea; margin-bottom:12px; letter-spacing:.04em }
+.step { display:flex; gap:10px; align-items:flex-start; font-size:12.5px; color:rgba(226,228,240,0.72); line-height:1.55 }
+.step+.step { margin-top:9px }
+.step-num {
+  flex-shrink:0; width:20px; height:20px; border-radius:50%;
+  background:rgba(98,126,234,0.15); border:1px solid rgba(98,126,234,0.3);
+  color:#627eea; font-size:11px; font-weight:600;
+  display:flex; align-items:center; justify-content:center; margin-top:1px;
+}
+.warn-box {
+  margin: 14px 26px 0; padding: 12px 14px;
+  background: rgba(255,170,0,0.05);
+  border: 1px solid rgba(255,170,0,0.2);
+  border-radius: 12px;
+}
+.warn-row { display:flex; gap:8px; font-size:12px; color:#c8a84b; line-height:1.5 }
+.warn-row+.warn-row { margin-top:7px }
+.wi { flex-shrink:0; margin-top:1px }
+.confirm-wrap { padding: 22px 26px 28px }
+.confirm-btn {
+  width:100%; height:52px;
+  background:linear-gradient(135deg,#627eea,#3a55cc);
+  color:#fff;
+  font-family:'Outfit',sans-serif; font-size:15px; font-weight:700;
+  border:none; border-radius:14px; cursor:pointer;
+  box-shadow:0 8px 30px rgba(98,126,234,0.4);
+  transition:all .2s; position:relative; overflow:hidden;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+}
+.confirm-btn::before {
+  content:''; position:absolute; inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,0.15),transparent);
+  opacity:0; transition:opacity .2s;
+}
+.confirm-btn:hover { transform:translateY(-2px); box-shadow:0 12px 40px rgba(98,126,234,0.5) }
+.confirm-btn:hover::before { opacity:1 }
+.confirm-btn:active { transform:translateY(0) }
+.confirm-btn:disabled { background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.3); box-shadow:none; cursor:not-allowed; transform:none }
+.status-panel {
+  display:none; margin:0 26px 28px; padding:20px; border-radius:14px;
+  text-align:center; flex-direction:column; align-items:center; gap:10px;
+}
+.status-panel.show { display:flex }
+.status-panel.waiting { background:rgba(98,126,234,0.06); border:1px solid rgba(98,126,234,0.22) }
+.sp-icon { font-size:32px; line-height:1 }
+.sp-title { font-size:15px; font-weight:600; color:#eaedf8 }
+.sp-sub   { font-size:12.5px; color:rgba(255,255,255,0.38); line-height:1.55 }
+.spinner {
+  width:28px; height:28px; border-radius:50%;
+  border:2.5px solid rgba(98,126,234,0.15);
+  border-top-color:#627eea;
+  animation:spin .9s linear infinite;
+}
+@keyframes spin { to{transform:rotate(360deg)} }
+.expired-mask {
+  display:none; position:absolute; inset:0;
+  background:rgba(8,9,15,.88); backdrop-filter:blur(8px);
+  border-radius:22px; z-index:20;
+  align-items:center; justify-content:center; flex-direction:column; gap:14px;
+}
+.expired-mask.show { display:flex }
+.exp-icon { font-size:46px }
+.exp-title { font-size:18px; font-weight:700; color:#ff5555 }
+.exp-sub   { font-size:13px; color:rgba(255,255,255,0.35); text-align:center; max-width:240px }
+</style>
+</head>
+<body>
+<div class="card" id="card">
+  <div class="stripe"></div>
+
+  <div class="header">
+    <div class="coin-badge">🔷</div>
+    <div class="coin-info">
+      <div class="coin-title">USDT 支付</div>
+      <div class="net-tag">ERC20 · Ethereum 网络</div>
+    </div>
+    <div class="timer-box">
+      <svg viewBox="0 0 46 46" width="46" height="46">
+        <circle class="track" cx="23" cy="23" r="18"/>
+        <circle class="prog"  cx="23" cy="23" r="18" id="prog"/>
+      </svg>
+      <div class="timer-num" id="tnum">--:--</div>
+    </div>
+  </div>
+
+  <div class="amount-row">
+    <div class="amt-label">本次应付</div>
+    <div class="amt-num"><span id="amtVal">—</span><span class="amt-unit">USDT</span></div>
+  </div>
+
+  <div class="qr-zone">
+    <div class="qr-frame">
+      <div class="qr-bl"></div>
+      <div id="qrcode"></div>
+    </div>
+    <div class="qr-hint">打开 MetaMask / 币安 / 欧易钱包，扫码转账</div>
+  </div>
+
+  <div class="addr-block">
+    <div class="addr-label">ERC20 收款地址</div>
+    <div class="addr-box">
+      <div class="addr-str" id="addrStr">加载中…</div>
+      <button class="copy-btn" id="copyBtn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="9" width="13" height="13" rx="2"/>
+          <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="steps">
+    <div class="steps-title">📋 付款步骤</div>
+    <div class="step"><div class="step-num">1</div><div>打开你的钱包，确认已切换至 <strong style="color:#627eea">ERC20（Ethereum）</strong> 网络</div></div>
+    <div class="step"><div class="step-num">2</div><div>向上方地址转入 <strong style="color:#eaedf8" id="stepAmt">—</strong> USDT，金额须与订单完全一致</div></div>
+    <div class="step"><div class="step-num">3</div><div>等待 ETH 链上确认（通常需要 <strong style="color:#eaedf8">1–5 分钟</strong>），确认后点击下方按钮</div></div>
+    <div class="step"><div class="step-num">4</div><div>人工核实链上记录后，系统将自动开通服务（通常 <strong style="color:#eaedf8">5–30 分钟</strong>）</div></div>
+  </div>
+
+  <div class="warn-box">
+    <div class="warn-row">
+      <span class="wi">⚠️</span>
+      <span>请务必使用 <strong>ERC20（Ethereum）</strong> 网络，使用 TRC20/BEP20 等其他链将导致资产永久丢失。</span>
+    </div>
+    <div class="warn-row">
+      <span class="wi">⚠️</span>
+      <span>ERC20 转账需消耗 <strong>ETH 作为 Gas 费</strong>，请确保钱包内有足够 ETH 支付手续费。</span>
+    </div>
+    <div class="warn-row">
+      <span class="wi">⚠️</span>
+      <span>转账金额必须与订单金额<strong>完全一致</strong>，多付或少付均需人工处理。</span>
+    </div>
+  </div>
+
+  <div class="confirm-wrap">
+    <button class="confirm-btn" id="confirmBtn" onclick="submitConfirm()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      我已完成转账
+    </button>
+  </div>
+
+  <div class="status-panel waiting" id="statusPanel">
+    <div class="spinner"></div>
+    <div class="sp-title">正在等待人工确认</div>
+    <div class="sp-sub" id="spSub">你的付款申请已提交，客服将在 <strong style="color:#627eea">5–30 分钟</strong>内核实链上记录并开通服务。<br>请保持页面开启或记录订单号稍后查询。</div>
+  </div>
+
+  <div class="expired-mask" id="expMask">
+    <div class="exp-icon">⏱️</div>
+    <div class="exp-title">订单已过期</div>
+    <div class="exp-sub">付款窗口已关闭，请返回重新下单</div>
+  </div>
+</div>
+
+<script>
+const q       = new URLSearchParams(location.search);
+const ADDRESS = q.get('address')  || '0xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxXX';
+const AMOUNT  = q.get('amount')   || '0';
+const ORDER   = q.get('order_id') || q.get('trade_no') || '';
+const TIMEOUT = parseInt(q.get('timeout') || '0');
+const NOTIFY  = q.get('notify_url') || q.get('confirm_url') || '';
+
+document.getElementById('addrStr').textContent = ADDRESS;
+document.getElementById('amtVal').textContent  = fmt(AMOUNT);
+document.getElementById('stepAmt').textContent = fmt(AMOUNT);
+
+function fmt(v){ const n=parseFloat(v); if(isNaN(n)) return v; return n%1===0?n.toString():n.toFixed(6).replace(/0+$/,''); }
+
+new QRCode(document.getElementById('qrcode'),{
+  text:ADDRESS, width:176, height:176,
+  colorDark:'#000', colorLight:'#fff', correctLevel:QRCode.CorrectLevel.M
+});
+
+document.getElementById('copyBtn').onclick=()=>{
+  navigator.clipboard.writeText(ADDRESS).then(()=>{
+    const b=document.getElementById('copyBtn');
+    b.classList.add('ok');
+    b.innerHTML=`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+    setTimeout(()=>{ b.classList.remove('ok'); b.innerHTML=`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>`; },2500);
+  });
+};
+
+const TOTAL=TIMEOUT?Math.max(0,TIMEOUT-Math.floor(Date.now()/1000)):900;
+let left=TOTAL;
+const prog=document.getElementById('prog');
+const CIRC=2*Math.PI*18;
+prog.style.strokeDasharray=CIRC;
+
+function tick(){
+  if(left<=0){ clearInterval(tid); showExpired(); return; }
+  const m=String(Math.floor(left/60)).padStart(2,'0'), s=String(left%60).padStart(2,'0');
+  document.getElementById('tnum').textContent=`${m}:${s}`;
+  const f=left/TOTAL;
+  prog.style.strokeDashoffset=CIRC*(1-f);
+  prog.style.stroke=f>.4?'#627eea':f>.15?'#f0a840':'#ff5555';
+  left--;
+}
+tick(); const tid=setInterval(tick,1000);
+
+function showExpired(){ document.getElementById('expMask').classList.add('show'); document.getElementById('confirmBtn').disabled=true; }
+
+async function submitConfirm(){
+  const btn=document.getElementById('confirmBtn');
+  btn.disabled=true;
+  btn.innerHTML='<div class="spinner" style="width:20px;height:20px;border-width:2px"></div> 提交中…';
+  if(NOTIFY){ try{ await fetch(NOTIFY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({order_id:ORDER,amount:AMOUNT,coin:'USDT',network:'ERC20'})}); }catch(e){} }
+  btn.closest('.confirm-wrap').style.display='none';
+  const panel=document.getElementById('statusPanel');
+  panel.classList.add('show');
+  if(ORDER){ document.getElementById('spSub').innerHTML=`你的付款申请已提交（订单 <span style="font-family:'IBM Plex Mono',monospace;color:#627eea;font-size:11px">#${ORDER}</span>），客服将在 <strong style="color:#627eea">5–30 分钟</strong>内核实链上记录并开通服务。<br><br>如超时未开通，请截图转账记录联系客服。`; }
+}
+</script>
+</body>
+</html>

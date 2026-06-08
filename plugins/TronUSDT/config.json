@@ -1,0 +1,8 @@
+{
+    "name": "TronUSDT",
+    "code": "tron_usdt",
+    "type": "payment",
+    "version": "1.0.0",
+    "description": "USDT TRC20 payment via TronGrid",
+    "author": "Custom"
+}

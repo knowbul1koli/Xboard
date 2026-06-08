@@ -1,0 +1,8 @@
+{
+    "name": "Pay8090",
+    "code": "pay8090",
+    "type": "payment",
+    "version": "1.0.0",
+    "description": "8090 EPay payment plugin",
+    "author": "XBoard Team"
+}

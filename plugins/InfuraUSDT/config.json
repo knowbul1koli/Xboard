@@ -1,0 +1,8 @@
+{
+    "name": "InfuraUSDT",
+    "code": "infura_usdt",
+    "type": "payment",
+    "version": "1.0.0",
+    "description": "USDT ERC20 payment via Infura",
+    "author": "Custom"
+}

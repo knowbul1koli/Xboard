@@ -1,0 +1,37 @@
+# 环境配置（含密钥，绝不提交）
+.env
+.env.backup
+.env.*.local
+
+# 依赖包
+/node_modules
+/vendor
+
+# Storage 整个目录排除（含数据库、缓存、日志）
+/storage/
+
+# SQLite 数据库文件（防双保险）
+*.sqlite
+*.sqlite-journal
+
+# Docker 数据目录
+/.docker/.data/
+
+# 编译产物
+/public/hot
+/public/storage
+/public/build
+
+# 包管理器锁文件
+package-lock.json
+
+# Composer
+/composer.phar
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# IDE
+/.idea
+/.vscode

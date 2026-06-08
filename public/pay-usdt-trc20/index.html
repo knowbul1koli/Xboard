@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>USDT 收银台 · TRC20</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+/* ── Reset & Base ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 15px; }
+body {
+  min-height: 100vh;
+  background: #070c10;
+  color: #e4ede8;
+  font-family: 'Outfit', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center;
+  padding: 24px 16px 48px;
+}
+
+/* ── Background ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0;
+  background:
+    radial-gradient(ellipse 70vw 50vh at 50% -10%, rgba(0,220,140,0.12) 0%, transparent 70%),
+    linear-gradient(rgba(0,220,140,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,220,140,0.03) 1px, transparent 1px);
+  background-size: 100% 100%, 44px 44px, 44px 44px;
+  pointer-events: none;
+}
+
+/* ── Card ── */
+.card {
+  position: relative; z-index: 1;
+  width: 100%; max-width: 460px;
+  background: linear-gradient(170deg, #0d1a14 0%, #0a1210 100%);
+  border: 1px solid rgba(0,220,140,0.15);
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 1px rgba(0,220,140,0.08),
+    0 40px 100px rgba(0,0,0,0.7),
+    0 0 80px rgba(0,220,140,0.08);
+  animation: rise .55s cubic-bezier(.22,1,.36,1) both;
+}
+@keyframes rise {
+  from { opacity:0; transform:translateY(28px) scale(0.97) }
+  to   { opacity:1; transform:none }
+}
+
+/* ── Top stripe ── */
+.stripe {
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #00dc8c, #00ffb3, #00dc8c, transparent);
+}
+
+/* ── Header ── */
+.header {
+  padding: 22px 26px 18px;
+  display: flex; align-items: center; gap: 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.coin-badge {
+  width: 46px; height: 46px; border-radius: 14px;
+  background: linear-gradient(135deg, #00dc8c 0%, #00a060 100%);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; flex-shrink: 0;
+  box-shadow: 0 6px 20px rgba(0,220,140,0.35);
+}
+.coin-info { flex: 1 }
+.coin-title { font-size: 18px; font-weight: 700; letter-spacing: -.3px; color: #e8f5ee }
+.net-tag {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10.5px; font-weight: 600;
+  color: #00dc8c;
+  background: rgba(0,220,140,0.1);
+  border: 1px solid rgba(0,220,140,0.25);
+  border-radius: 20px; padding: 2px 10px; margin-top: 4px;
+}
+.net-tag::before {
+  content: '';
+  width: 5px; height: 5px; border-radius: 50%;
+  background: #00dc8c; box-shadow: 0 0 6px #00dc8c;
+  animation: blink 2s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+/* timer */
+.timer-wrap { text-align: center }
+.timer-ring { display:block }
+.timer-ring circle { fill:none; stroke-width:3; stroke-linecap:round }
+.track { stroke: rgba(255,255,255,0.07) }
+.prog  {
+  stroke: #00dc8c;
+  stroke-dasharray: 113;
+  stroke-dashoffset: 0;
+  transform: rotate(-90deg); transform-origin: 50% 50%;
+  transition: stroke-dashoffset 1s linear, stroke .5s;
+}
+.timer-box { position:relative; width:46px; height:46px }
+.timer-box svg { position:absolute; inset:0 }
+.timer-num {
+  position:absolute; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:600;
+  color:#e4ede8;
+}
+
+/* ── Amount ── */
+.amount-row {
+  padding: 18px 26px 16px;
+  text-align: center;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  background: rgba(0,220,140,0.03);
+}
+.amt-label {
+  font-size: 11px; font-weight: 500; letter-spacing: .12em;
+  text-transform: uppercase; color: rgba(255,255,255,0.3); margin-bottom: 6px;
+}
+.amt-num {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 38px; font-weight: 600; letter-spacing: -2px; line-height: 1;
+  color: #e8f5ee;
+}
+.amt-unit { font-size: 16px; color: #00dc8c; margin-left: 6px; font-weight: 500; letter-spacing: 0 }
+
+/* ── QR ── */
+.qr-zone {
+  padding: 26px 26px 18px;
+  display: flex; flex-direction: column; align-items: center; gap: 16px;
+}
+.qr-frame {
+  position: relative;
+  padding: 13px; background: #fff; border-radius: 14px;
+  box-shadow: 0 0 50px rgba(0,220,140,0.2);
+}
+/* Corner brackets */
+.qr-frame::before,.qr-frame::after,
+.qr-bl::before,.qr-bl::after {
+  content:''; position:absolute;
+  width:16px; height:16px;
+  border-color:#00dc8c; border-style:solid;
+}
+.qr-frame::before { top:-2px;  left:-2px;  border-width:3px 0 0 3px; border-radius:4px 0 0 0 }
+.qr-frame::after  { top:-2px;  right:-2px; border-width:3px 3px 0 0; border-radius:0 4px 0 0 }
+.qr-bl::before    { bottom:-2px; left:-2px;  border-width:0 0 3px 3px; border-radius:0 0 0 4px }
+.qr-bl::after     { bottom:-2px; right:-2px; border-width:0 3px 3px 0; border-radius:0 0 4px 0 }
+.qr-bl { position:absolute; inset:-2px; pointer-events:none }
+#qrcode img, #qrcode canvas { display:block; border-radius:4px }
+.qr-hint { font-size:12px; color:rgba(255,255,255,0.3) }
+
+/* ── Address ── */
+.addr-block { padding: 0 26px 0 }
+.addr-label {
+  font-size:11px; font-weight:500; letter-spacing:.1em;
+  text-transform:uppercase; color:rgba(255,255,255,0.3); margin-bottom:8px;
+}
+.addr-box {
+  display:flex; align-items:center; gap:8px;
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:12px; padding:12px 14px;
+  transition:border-color .2s;
+}
+.addr-box:hover { border-color:rgba(0,220,140,0.25) }
+.addr-str {
+  flex:1; font-family:'IBM Plex Mono',monospace; font-size:11.5px;
+  color:#c8e8d8; word-break:break-all; line-height:1.55; user-select:all;
+}
+.copy-btn {
+  flex-shrink:0; width:34px; height:34px; border-radius:8px;
+  border:1px solid rgba(255,255,255,0.1);
+  background:rgba(255,255,255,0.05);
+  color:rgba(255,255,255,0.4);
+  cursor:pointer; display:flex; align-items:center; justify-content:center;
+  transition:all .2s;
+}
+.copy-btn:hover { background:rgba(0,220,140,0.1); color:#00dc8c; border-color:rgba(0,220,140,0.3) }
+.copy-btn.ok   { background:rgba(0,220,140,0.15); color:#00dc8c; border-color:#00dc8c }
+
+/* ── Steps ── */
+.steps {
+  margin: 20px 26px 0;
+  padding: 16px;
+  background: rgba(0,220,140,0.05);
+  border: 1px solid rgba(0,220,140,0.12);
+  border-radius: 14px;
+}
+.steps-title {
+  font-size: 12px; font-weight: 600; color: #00dc8c;
+  margin-bottom: 12px; letter-spacing: .04em;
+}
+.step {
+  display: flex; gap: 10px; align-items: flex-start;
+  font-size: 12.5px; color: rgba(228,237,232,0.75);
+  line-height: 1.55;
+}
+.step + .step { margin-top: 9px }
+.step-num {
+  flex-shrink:0;
+  width:20px; height:20px; border-radius:50%;
+  background:rgba(0,220,140,0.15); border:1px solid rgba(0,220,140,0.3);
+  color:#00dc8c; font-size:11px; font-weight:600;
+  display:flex; align-items:center; justify-content:center; margin-top:1px;
+}
+
+/* ── Warn ── */
+.warn-box {
+  margin: 14px 26px 0;
+  padding: 12px 14px;
+  background: rgba(255,170,0,0.05);
+  border: 1px solid rgba(255,170,0,0.2);
+  border-radius: 12px;
+}
+.warn-row {
+  display:flex; gap:8px; font-size:12px; color:#c8a84b; line-height:1.5;
+}
+.warn-row+.warn-row { margin-top:7px }
+.wi { flex-shrink:0; margin-top:1px }
+
+/* ── Confirm Button ── */
+.confirm-wrap {
+  padding: 22px 26px 28px;
+}
+.confirm-btn {
+  width: 100%; height: 52px;
+  background: linear-gradient(135deg, #00dc8c, #00a868);
+  color: #001a0e;
+  font-family: 'Outfit', sans-serif;
+  font-size: 15px; font-weight: 700;
+  border: none; border-radius: 14px;
+  cursor: pointer; letter-spacing: .02em;
+  box-shadow: 0 8px 30px rgba(0,220,140,0.35);
+  transition: all .2s; position:relative; overflow:hidden;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.confirm-btn::before {
+  content:''; position:absolute; inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,0.15),transparent);
+  opacity:0; transition:opacity .2s;
+}
+.confirm-btn:hover { transform:translateY(-2px); box-shadow:0 12px 40px rgba(0,220,140,0.45) }
+.confirm-btn:hover::before { opacity:1 }
+.confirm-btn:active { transform:translateY(0) }
+.confirm-btn:disabled {
+  background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.3);
+  box-shadow:none; cursor:not-allowed; transform:none;
+}
+
+/* ── Status Panel ── */
+.status-panel {
+  display:none;
+  margin: 0 26px 28px;
+  padding: 20px;
+  border-radius: 14px;
+  text-align: center;
+  flex-direction:column; align-items:center; gap:10px;
+}
+.status-panel.show { display:flex }
+
+.status-panel.waiting {
+  background: rgba(0,220,140,0.05);
+  border: 1px solid rgba(0,220,140,0.2);
+}
+.status-panel.success {
+  background: rgba(0,220,140,0.08);
+  border: 1px solid rgba(0,220,140,0.3);
+}
+.status-panel.error {
+  background: rgba(255,70,70,0.06);
+  border: 1px solid rgba(255,70,70,0.25);
+}
+
+.sp-icon { font-size:32px; line-height:1 }
+.sp-title { font-size:15px; font-weight:600; color:#e8f5ee }
+.sp-sub   { font-size:12.5px; color:rgba(255,255,255,0.4); line-height:1.55 }
+
+/* spinner */
+.spinner {
+  width:28px; height:28px; border-radius:50%;
+  border:2.5px solid rgba(0,220,140,0.15);
+  border-top-color:#00dc8c;
+  animation:spin .9s linear infinite;
+}
+@keyframes spin { to { transform:rotate(360deg) } }
+
+/* ── Expired overlay ── */
+.expired-mask {
+  display:none; position:absolute; inset:0;
+  background:rgba(7,12,16,.88); backdrop-filter:blur(8px);
+  border-radius:22px; z-index:20;
+  align-items:center; justify-content:center; flex-direction:column; gap:14px;
+}
+.expired-mask.show { display:flex }
+.exp-icon { font-size:46px }
+.exp-title { font-size:18px; font-weight:700; color:#ff5555 }
+.exp-sub   { font-size:13px; color:rgba(255,255,255,0.35); text-align:center; max-width:240px }
+</style>
+</head>
+<body>
+<div class="card" id="card">
+  <div class="stripe"></div>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="coin-badge">💚</div>
+    <div class="coin-info">
+      <div class="coin-title">USDT 支付</div>
+      <div class="net-tag">TRC20 · Tron 网络</div>
+    </div>
+    <div class="timer-box">
+      <svg class="timer-ring" viewBox="0 0 46 46" width="46" height="46">
+        <circle class="track" cx="23" cy="23" r="18"/>
+        <circle class="prog"  cx="23" cy="23" r="18" id="prog"/>
+      </svg>
+      <div class="timer-num" id="tnum">--:--</div>
+    </div>
+  </div>
+
+  <!-- Amount -->
+  <div class="amount-row">
+    <div class="amt-label">本次应付</div>
+    <div class="amt-num">
+      <span id="amtVal">—</span><span class="amt-unit">USDT</span>
+    </div>
+  </div>
+
+  <!-- QR -->
+  <div class="qr-zone">
+    <div class="qr-frame">
+      <div class="qr-bl"></div>
+      <div id="qrcode"></div>
+    </div>
+    <div class="qr-hint">打开 TronLink / 币安 / 欧易钱包，扫码转账</div>
+  </div>
+
+  <!-- Address -->
+  <div class="addr-block">
+    <div class="addr-label">TRC20 收款地址</div>
+    <div class="addr-box">
+      <div class="addr-str" id="addrStr">加载中…</div>
+      <button class="copy-btn" id="copyBtn" title="复制地址">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="9" width="13" height="13" rx="2"/>
+          <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Steps -->
+  <div class="steps">
+    <div class="steps-title">📋 付款步骤</div>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div>打开你的加密货币钱包，确认已切换至 <strong style="color:#00dc8c">TRC20（Tron）</strong> 网络</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div>向上方地址转入 <strong style="color:#e8f5ee" id="stepAmt">—</strong> USDT，金额须与订单完全一致</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div>转账广播成功后，点击下方「<strong style="color:#00dc8c">我已完成转账</strong>」按钮</div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div>人工核实链上记录后，系统将自动为你开通服务（通常 <strong style="color:#e8f5ee">5–30 分钟</strong>）</div>
+    </div>
+  </div>
+
+  <!-- Warn -->
+  <div class="warn-box">
+    <div class="warn-row">
+      <span class="wi">⚠️</span>
+      <span>请务必使用 <strong>TRC20 网络</strong>，发送 ERC20/BEP20 等其他链将导致资产永久丢失。</span>
+    </div>
+    <div class="warn-row">
+      <span class="wi">⚠️</span>
+      <span>转账金额必须与订单金额<strong>完全一致</strong>，多付或少付均需人工处理，周期较长。</span>
+    </div>
+  </div>
+
+  <!-- Confirm Button -->
+  <div class="confirm-wrap">
+    <button class="confirm-btn" id="confirmBtn" onclick="submitConfirm()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+      我已完成转账
+    </button>
+  </div>
+
+  <!-- Status Panel (shown after confirm) -->
+  <div class="status-panel waiting" id="statusPanel">
+    <div class="spinner"></div>
+    <div class="sp-title">正在等待人工确认</div>
+    <div class="sp-sub" id="spSub">你的付款申请已提交，客服将在 <strong style="color:#00dc8c">5–30 分钟</strong>内核实链上记录并开通服务。<br>请保持页面开启或记录订单号稍后查询。</div>
+  </div>
+
+  <!-- Expired -->
+  <div class="expired-mask" id="expMask">
+    <div class="exp-icon">⏱️</div>
+    <div class="exp-title">订单已过期</div>
+    <div class="exp-sub">付款窗口已关闭，请返回重新下单</div>
+  </div>
+</div>
+
+<script>
+const q       = new URLSearchParams(location.search);
+const ADDRESS = q.get('address')  || 'TXxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
+const AMOUNT  = q.get('amount')   || '0';
+const ORDER   = q.get('order_id') || q.get('trade_no') || '';
+const TIMEOUT = parseInt(q.get('timeout') || '0');
+const NOTIFY  = q.get('notify_url') || q.get('confirm_url') || '';
+
+// Fill
+document.getElementById('addrStr').textContent = ADDRESS;
+document.getElementById('amtVal').textContent   = fmt(AMOUNT);
+document.getElementById('stepAmt').textContent  = fmt(AMOUNT);
+
+function fmt(v){
+  const n=parseFloat(v);
+  if(isNaN(n)) return v;
+  return n%1===0?n.toString():n.toFixed(6).replace(/0+$/,'');
+}
+
+// QR
+new QRCode(document.getElementById('qrcode'),{
+  text:ADDRESS, width:176, height:176,
+  colorDark:'#000', colorLight:'#fff',
+  correctLevel:QRCode.CorrectLevel.M
+});
+
+// Copy
+document.getElementById('copyBtn').onclick = () => {
+  navigator.clipboard.writeText(ADDRESS).then(()=>{
+    const b=document.getElementById('copyBtn');
+    b.classList.add('ok');
+    b.innerHTML=`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+    setTimeout(()=>{
+      b.classList.remove('ok');
+      b.innerHTML=`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>`;
+    },2500);
+  });
+};
+
+// Countdown
+const TOTAL = TIMEOUT ? Math.max(0, TIMEOUT - Math.floor(Date.now()/1000)) : 900;
+let left = TOTAL;
+const prog = document.getElementById('prog');
+const CIRC = 2*Math.PI*18;
+prog.style.strokeDasharray = CIRC;
+
+function tick(){
+  if(left<=0){ clearInterval(tid); showExpired(); return; }
+  const m=String(Math.floor(left/60)).padStart(2,'0');
+  const s=String(left%60).padStart(2,'0');
+  document.getElementById('tnum').textContent=`${m}:${s}`;
+  const f=left/TOTAL;
+  prog.style.strokeDashoffset=CIRC*(1-f);
+  prog.style.stroke = f>.4?'#00dc8c':f>.15?'#f0a840':'#ff5555';
+  left--;
+}
+tick();
+const tid=setInterval(tick,1000);
+
+function showExpired(){
+  document.getElementById('expMask').classList.add('show');
+  document.getElementById('confirmBtn').disabled=true;
+}
+
+// Confirm
+async function submitConfirm(){
+  const btn=document.getElementById('confirmBtn');
+  btn.disabled=true;
+  btn.innerHTML='<div class="spinner" style="width:20px;height:20px;border-width:2px"></div> 提交中…';
+
+  // POST to notify endpoint
+  if(NOTIFY){
+    try{
+      await fetch(NOTIFY,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({order_id:ORDER,amount:AMOUNT,coin:'USDT',network:'TRC20'})
+      });
+    }catch(e){}
+  }
+
+  // Show waiting panel
+  btn.closest('.confirm-wrap').style.display='none';
+  const panel=document.getElementById('statusPanel');
+  panel.classList.add('show');
+  panel.classList.add('waiting');
+
+  // Update sub text with order id hint
+  if(ORDER){
+    document.getElementById('spSub').innerHTML=
+      `你的付款申请已提交（订单 <span style="font-family:'IBM Plex Mono',monospace;color:#00dc8c;font-size:11px">#${ORDER}</span>），客服将在 <strong style="color:#00dc8c">5–30 分钟</strong>内核实链上记录并开通服务。<br><br>如超时未开通，请截图转账记录联系客服。`;
+  }
+}
+</script>
+</body>
+</html>

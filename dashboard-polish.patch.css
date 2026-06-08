@@ -1,0 +1,53 @@
+/* =============================================
+   dashboard-polish.patch — 追加到 styles/main.css 末尾
+   ============================================= */
+
+/* 卡片统一 hover 提升感 */
+.card {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.card:hover {
+  border-color: var(--border-hover) !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.07) !important;
+}
+
+/* 侧栏菜单项更顺滑 */
+.nav-item, [class*="nav-"] a, .sidebar a {
+  transition: background 0.15s ease, color 0.15s ease !important;
+}
+
+/* 按钮点击反馈 */
+.btn-primary, .btn-ghost {
+  transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease !important;
+}
+.btn-primary:active:not(:disabled),
+.btn-ghost:active:not(:disabled) {
+  transform: scale(0.97) !important;
+}
+
+/* input focus 更清晰 */
+.input:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px var(--accent-muted) !important;
+  outline: none !important;
+}
+
+/* 滚动条更细腻 */
+::-webkit-scrollbar       { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.08);
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.16); }
+
+/* 选中文字颜色 */
+::selection {
+  background: var(--accent-muted);
+  color: var(--text-primary);
+}
+
+/* 页面切换淡入更平滑 */
+.animate-fade-in  { animation: fadeIn  0.2s ease both; }
+.animate-slide-up { animation: slideUp 0.28s cubic-bezier(0.22, 1, 0.36, 1) both; }
